@@ -1,5 +1,5 @@
 _base_ = [
-    '../_base_/models/ocrnet_r50-d8.py', '../_base_/datasets/cityscapes_769x769.py',
+    '../_base_/models/ocrnet_r50-d8.py', '../_base_/datasets/cityscapes_768x768.py',
     '../_base_/default_runtime.py', '../_base_/schedules/schedule_80k.py'
 ]
 find_unused_parameters = True
