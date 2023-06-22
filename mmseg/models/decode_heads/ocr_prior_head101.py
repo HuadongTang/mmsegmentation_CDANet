@@ -10,64 +10,66 @@ from ..utils import SelfAttentionBlock as _SelfAttentionBlock
 from .cascade_decode_head import BaseCascadeDecodeHead
 import numpy as np
 from ..builder import HEADS, build_loss
+
+
 # from mmseg.ops import resize
-class StripPooling(nn.Module):
-    """
-    Reference:
-    """
-    def __init__(self, in_channels, pool_size, norm_layer, up_kwargs):
-        super(StripPooling, self).__init__()
-        self.pool1 = nn.AdaptiveAvgPool2d(pool_size[0])
-        self.pool2 = nn.AdaptiveAvgPool2d(pool_size[1])
-        self.pool3 = nn.AdaptiveAvgPool2d((1, None))
-        self.pool4 = nn.AdaptiveAvgPool2d((None, 1))
-
-        inter_channels = int(in_channels/4)
-        self.conv1_1 = nn.Sequential(nn.Conv2d(in_channels, inter_channels, 1, bias=False),
-                                norm_layer(inter_channels),
-                                nn.ReLU(True))
-        self.conv1_2 = nn.Sequential(nn.Conv2d(in_channels, inter_channels, 1, bias=False),
-                                norm_layer(inter_channels),
-                                nn.ReLU(True))
-        self.conv2_0 = nn.Sequential(nn.Conv2d(inter_channels, inter_channels, 3, 1, 1, bias=False),
-                                norm_layer(inter_channels))
-        self.conv2_1 = nn.Sequential(nn.Conv2d(inter_channels, inter_channels, 3, 1, 1, bias=False),
-                                norm_layer(inter_channels))
-        self.conv2_2 = nn.Sequential(nn.Conv2d(inter_channels, inter_channels, 3, 1, 1, bias=False),
-                                norm_layer(inter_channels))
-        self.conv2_3 = nn.Sequential(nn.Conv2d(inter_channels, inter_channels, (1, 3), 1, (0, 1), bias=False),
-                                norm_layer(inter_channels))
-        self.conv2_4 = nn.Sequential(nn.Conv2d(inter_channels, inter_channels, (3, 1), 1, (1, 0), bias=False),
-                                norm_layer(inter_channels))
-        self.conv2_5 = nn.Sequential(nn.Conv2d(inter_channels, inter_channels, 3, 1, 1, bias=False),
-                                norm_layer(inter_channels),
-                                nn.ReLU(True))
-        self.conv2_6 = nn.Sequential(nn.Conv2d(inter_channels, inter_channels, 3, 1, 1, bias=False),
-                                norm_layer(inter_channels),
-                                nn.ReLU(True))
-        self.conv3 = nn.Sequential(nn.Conv2d(inter_channels*2, in_channels, 1, bias=False),
-                                norm_layer(in_channels))
-
-        self.conv4 = nn.Sequential(nn.Conv2d(in_channels, 512, 1, bias=False),
-                                   norm_layer(512))
-
-        # bilinear interpolate options
-        self._up_kwargs = up_kwargs
-
-    def forward(self, x):
-        _, _, h, w = x.size()
-        x1 = self.conv1_1(x)
-        x2 = self.conv1_2(x)
-        x2_1 = self.conv2_0(x1)
-        x2_2 = F.interpolate(self.conv2_1(self.pool1(x1)), (h, w), **self._up_kwargs)
-        x2_3 = F.interpolate(self.conv2_2(self.pool2(x1)), (h, w), **self._up_kwargs)
-        x2_4 = F.interpolate(self.conv2_3(self.pool3(x2)), (h, w), **self._up_kwargs)
-        x2_5 = F.interpolate(self.conv2_4(self.pool4(x2)), (h, w), **self._up_kwargs)
-        x1 = self.conv2_5(F.relu_(x2_1 + x2_2 + x2_3))
-        x2 = self.conv2_6(F.relu_(x2_5 + x2_4))
-        out = self.conv3(torch.cat([x1, x2], dim=1))
-        out_ = self.conv4(F.relu_(x + out))
-        return out_
+# class StripPooling(nn.Module):
+#     """
+#     Reference:
+#     """
+#     def __init__(self, in_channels, pool_size, norm_layer, up_kwargs):
+#         super(StripPooling, self).__init__()
+#         self.pool1 = nn.AdaptiveAvgPool2d(pool_size[0])
+#         self.pool2 = nn.AdaptiveAvgPool2d(pool_size[1])
+#         self.pool3 = nn.AdaptiveAvgPool2d((1, None))
+#         self.pool4 = nn.AdaptiveAvgPool2d((None, 1))
+#
+#         inter_channels = int(in_channels/4)
+#         self.conv1_1 = nn.Sequential(nn.Conv2d(in_channels, inter_channels, 1, bias=False),
+#                                 norm_layer(inter_channels),
+#                                 nn.ReLU(True))
+#         self.conv1_2 = nn.Sequential(nn.Conv2d(in_channels, inter_channels, 1, bias=False),
+#                                 norm_layer(inter_channels),
+#                                 nn.ReLU(True))
+#         self.conv2_0 = nn.Sequential(nn.Conv2d(inter_channels, inter_channels, 3, 1, 1, bias=False),
+#                                 norm_layer(inter_channels))
+#         self.conv2_1 = nn.Sequential(nn.Conv2d(inter_channels, inter_channels, 3, 1, 1, bias=False),
+#                                 norm_layer(inter_channels))
+#         self.conv2_2 = nn.Sequential(nn.Conv2d(inter_channels, inter_channels, 3, 1, 1, bias=False),
+#                                 norm_layer(inter_channels))
+#         self.conv2_3 = nn.Sequential(nn.Conv2d(inter_channels, inter_channels, (1, 3), 1, (0, 1), bias=False),
+#                                 norm_layer(inter_channels))
+#         self.conv2_4 = nn.Sequential(nn.Conv2d(inter_channels, inter_channels, (3, 1), 1, (1, 0), bias=False),
+#                                 norm_layer(inter_channels))
+#         self.conv2_5 = nn.Sequential(nn.Conv2d(inter_channels, inter_channels, 3, 1, 1, bias=False),
+#                                 norm_layer(inter_channels),
+#                                 nn.ReLU(True))
+#         self.conv2_6 = nn.Sequential(nn.Conv2d(inter_channels, inter_channels, 3, 1, 1, bias=False),
+#                                 norm_layer(inter_channels),
+#                                 nn.ReLU(True))
+#         self.conv3 = nn.Sequential(nn.Conv2d(inter_channels*2, in_channels, 1, bias=False),
+#                                 norm_layer(in_channels))
+#
+#         self.conv4 = nn.Sequential(nn.Conv2d(in_channels, 512, 1, bias=False),
+#                                    norm_layer(512))
+#
+#         # bilinear interpolate options
+#         self._up_kwargs = up_kwargs
+#
+#     def forward(self, x):
+#         _, _, h, w = x.size()
+#         x1 = self.conv1_1(x)
+#         x2 = self.conv1_2(x)
+#         x2_1 = self.conv2_0(x1)
+#         x2_2 = F.interpolate(self.conv2_1(self.pool1(x1)), (h, w), **self._up_kwargs)
+#         x2_3 = F.interpolate(self.conv2_2(self.pool2(x1)), (h, w), **self._up_kwargs)
+#         x2_4 = F.interpolate(self.conv2_3(self.pool3(x2)), (h, w), **self._up_kwargs)
+#         x2_5 = F.interpolate(self.conv2_4(self.pool4(x2)), (h, w), **self._up_kwargs)
+#         x1 = self.conv2_5(F.relu_(x2_1 + x2_2 + x2_3))
+#         x2 = self.conv2_6(F.relu_(x2_5 + x2_4))
+#         out = self.conv3(torch.cat([x1, x2], dim=1))
+#         out_ = self.conv4(F.relu_(x + out))
+#         return out_
 class AggregationModule(nn.Module):
     """Aggregation Module"""
 
@@ -146,6 +148,7 @@ class AggregationModule(nn.Module):
         out = self.relu(self.norm(x1 + x2))
         return out
 
+
 class SpatialGatherModule(nn.Module):
     """Aggregate the context features according to the initial predicted
     probability distribution.
@@ -207,7 +210,7 @@ class ObjectAttentionBlock(_SelfAttentionBlock):
             norm_cfg=self.norm_cfg,
             act_cfg=self.act_cfg)
 
-    def forward(self,  query_feats, key_feats):
+    def forward(self, query_feats, key_feats):
         """Forward function."""
         context = super(ObjectAttentionBlock,
                         self).forward(query_feats, key_feats)
@@ -217,30 +220,14 @@ class ObjectAttentionBlock(_SelfAttentionBlock):
             output = resize(query_feats)
 
         return context
-# class PriorConv(nn.Module):
-#     def __init__(self, height=None, width=None):
-#         super(PriorConv, self).__init__()
-#
-#     def forward(self, x):
-#         batch_size, channel, h, w = x.size()
-#         # self.prior_size = int(h/4 + 1)*int(w/4 + 1) #ade20k
-#         self.prior_size = h*w #int(math.ceil(h/2)) * int(math.ceil(w/2))# cityscapes
-#         # reshape_value = x.view(batch_size, -1, np.prod([h, w]))
-#         # context_prior_map = torch.bmm(reshape_value.permute(0, 2, 1), reshape_value)
-#         # context_prior_map = context_prior_map.permute(0, 2, 1)
-#
-#         self.prior_conv = nn.Sequential(
-#             nn.Conv2d(
-#                 512,
-#                 self.prior_size,
-#                 1,
-#                 stride=1,
-#                 padding=0,
-#                 groups=1), nn.BatchNorm2d(self.prior_size)).cuda()
-#
-#         context_prior_map = self.prior_conv(x)
-#
-#         return context_prior_map
+
+
+# class Context_map(nn.Module):
+#     def __init_(self,in_channels, out_channels):
+#         super(Context_map, self).__init__()
+#         self.in_channels = in_channels
+#         self.out_channels = out_channels
+#     def forward(self, )
 
 @HEADS.register_module()
 class OCRPriorHead101(BaseCascadeDecodeHead):
@@ -262,7 +249,14 @@ class OCRPriorHead101(BaseCascadeDecodeHead):
         # self.proir_hsize = proir_hsize
         # self.proir_wsize = proir_wsize
         # self.prior_size = np.prod([proir_hsize, proir_wsize])
-        self.object_context_block = ObjectAttentionBlock(
+        self.object_context_block_intra = ObjectAttentionBlock(
+            self.channels,
+            self.ocr_channels,
+            self.scale,
+            conv_cfg=self.conv_cfg,
+            norm_cfg=self.norm_cfg,
+            act_cfg=self.act_cfg)
+        self.object_context_block_inter = ObjectAttentionBlock(
             self.channels,
             self.ocr_channels,
             self.scale,
@@ -279,6 +273,14 @@ class OCRPriorHead101(BaseCascadeDecodeHead):
             conv_cfg=self.conv_cfg,
             norm_cfg=self.norm_cfg,
             act_cfg=self.act_cfg)
+        # self.bottleneck_feats = ConvModule(
+        #     self.in_channels,
+        #     self.channels,
+        #     3,
+        #     padding=1,
+        #     conv_cfg=self.conv_cfg,
+        #     norm_cfg=self.norm_cfg,
+        #     act_cfg=self.act_cfg)
         self.bottleneck_final = ConvModule(
             1536,
             self.channels,
@@ -287,9 +289,9 @@ class OCRPriorHead101(BaseCascadeDecodeHead):
             norm_cfg=self.norm_cfg,
             act_cfg=self.act_cfg)
         self.loss_prior_decode = build_loss(loss_prior_decode)
-        # self.aggregation = AggregationModule(2048, 512,
-        #                                      11, self.conv_cfg,
-        #                                      self.norm_cfg)
+        self.aggregation = AggregationModule(2048, 512,
+                                             31, self.conv_cfg,
+                                             self.norm_cfg)
         # up_kwargs = {'mode': 'bilinear', 'align_corners': True}
         # self.stripPooling = StripPooling(2048, (20, 12), nn.BatchNorm2d, up_kwargs)
         # self.prior_conv = ConvModule(
@@ -322,7 +324,7 @@ class OCRPriorHead101(BaseCascadeDecodeHead):
             conv_cfg=self.conv_cfg,
             norm_cfg=self.norm_cfg,
             act_cfg=self.act_cfg)
-        self.intra_inter_conv = ConvModule(
+        self.intra_feats_conv = ConvModule(
             1024,
             512,
             1,
@@ -331,6 +333,25 @@ class OCRPriorHead101(BaseCascadeDecodeHead):
             conv_cfg=self.conv_cfg,
             norm_cfg=self.norm_cfg,
             act_cfg=self.act_cfg)
+
+        self.inter_feats_conv = ConvModule(
+            1024,
+            512,
+            1,
+            padding=0,
+            stride=1,
+            conv_cfg=self.conv_cfg,
+            norm_cfg=self.norm_cfg,
+            act_cfg=self.act_cfg)
+        # self.intra_inter_conv = ConvModule(
+        #     1024,
+        #     512,
+        #     1,
+        #     padding=0,
+        #     stride=1,
+        #     conv_cfg=self.conv_cfg,
+        #     norm_cfg=self.norm_cfg,
+        #     act_cfg=self.act_cfg)
         # self.context_conv = ConvModule(
         #     1024,
         #     512,
@@ -349,8 +370,10 @@ class OCRPriorHead101(BaseCascadeDecodeHead):
         #         stride=1,
         #         padding=0,
         #         groups=1), nn.BatchNorm2d(self.prior_size))
-        self.query_conv = nn.Conv2d(in_channels=self.prior_channels, out_channels=self.prior_channels // 8, kernel_size=1)
+        self.query_conv = nn.Conv2d(in_channels=self.prior_channels, out_channels=self.prior_channels // 8,
+                                    kernel_size=1)
         self.key_conv = nn.Conv2d(in_channels=self.prior_channels, out_channels=self.prior_channels // 8, kernel_size=1)
+
     def forward(self, inputs, prev_output):
         """Forward function."""
         # inputs B H w C_0
@@ -363,8 +386,8 @@ class OCRPriorHead101(BaseCascadeDecodeHead):
         x = self._transform_inputs(inputs)
         batch_size, channels, height, width = x.size()
 
-        # value = self.aggregation(x)
-        value = self.bottleneck(x)
+        value = self.aggregation(x)
+        # value = self.bottleneck(value)
 
         proj_query = self.query_conv(value).view(batch_size, -1, width * height).permute(0, 2, 1)
         proj_key = self.key_conv(value).view(batch_size, -1, width * height)
@@ -391,7 +414,7 @@ class OCRPriorHead101(BaseCascadeDecodeHead):
         #     intra_context = resize(input=intra_context, size=x.shape[2:], mode='bilinear', align_corners=self.align_corners)
         intra_context = self.intra_conv(intra_context)
 
-#############################################
+        #############################################
         inter_context = torch.bmm(inter_context_prior_map, value)
         inter_context = inter_context.div(np.prod([height, width]))
         inter_context = inter_context.permute(0, 2, 1).contiguous()
@@ -403,23 +426,24 @@ class OCRPriorHead101(BaseCascadeDecodeHead):
         inter_context = self.inter_conv(inter_context)
         # inter_feats = self.intra_ter(torch.cat([feats, inter_context], 1))
 
-
         feats = self.bottleneck(x)
         context = self.spatial_gather_module(feats, prev_output)
         # object_context = self.object_context_block(feats, context)
 
-        intra_feats = self.intra_inter_conv(torch.cat([feats, intra_context], dim=1))
-        inter_feats = self.intra_inter_conv(torch.cat([feats, inter_context], dim=1))
-        intra_object_context = self.object_context_block(intra_feats, context)
-        inter_object_context = self.object_context_block(inter_feats, context)
+        intra_feats = self.intra_feats_conv(torch.cat([feats, intra_context], dim=1))
+        inter_feats = self.inter_feats_conv(torch.cat([feats, inter_context], dim=1))
+        intra_object_context = self.object_context_block_intra(intra_feats, context)
+        inter_object_context = self.object_context_block_inter(inter_feats, context)
         output = self.bottleneck_final(torch.cat([feats, intra_object_context, inter_object_context], dim=1))
 
         output = self.cls_seg(output)
 
         return output, context_prior_map
+
     def forward_test(self, inputs, prev_output, img_metas, test_cfg):
         """Forward function for testing, only ``pam_cam`` is used."""
         return self.forward(inputs, prev_output)[0]
+
     def _construct_ideal_affinity_matrix(self, label, label_size):
         scaled_labels = F.interpolate(
             label.float(), size=label_size, mode="nearest")
@@ -431,6 +455,7 @@ class OCRPriorHead101(BaseCascadeDecodeHead):
         ideal_affinity_matrix = torch.bmm(one_hot_labels,
                                           one_hot_labels.permute(0, 2, 1))
         return ideal_affinity_matrix
+
     def losses(self, seg_logit, seg_label):
         """Compute ``seg``, ``prior_map`` loss."""
         seg_logit, context_prior_map = seg_logit
