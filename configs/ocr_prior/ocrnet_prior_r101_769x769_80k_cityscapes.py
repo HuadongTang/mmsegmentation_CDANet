@@ -1,14 +1,17 @@
 _base_ = [
-    '../_base_/models/ocrnet_r50-d8.py', '../_base_/datasets/cityscapes_768x768.py',
+    '../_base_/models/ocrnet_r50-d8.py', '../_base_/datasets/cityscapes_769x769.py',
     '../_base_/default_runtime.py', '../_base_/schedules/schedule_80k.py'
 ]
 find_unused_parameters = True
 norm_cfg = dict(type='SyncBN', requires_grad=True)
+data = dict(
+    samples_per_gpu=8,
+    workers_per_gpu=8,)
 model = dict(
     type='CascadeEncoderDecoder',
     num_stages=2,
     pretrained=
-    '/home/huatang/Data/mmsegmentation/pretrained/resnet101_v1c-e67eebb6.pth',
+    'open-mmlab://resnet101_v1c',
     backbone=dict(
         type='ResNetV1c',
         depth=101,
@@ -21,7 +24,8 @@ model = dict(
         style='pytorch',
         contract_dilation=True),
     train_cfg=dict(),
-    test_cfg=dict(mode='whole'),
+    test_cfg=dict(mode='slide', crop_size=(769, 769), stride=(513, 513)),
+    # test_cfg=dict(mode='whole'),
     decode_head=[
         dict(
             type='FCNHead',
@@ -33,7 +37,7 @@ model = dict(
             dropout_ratio=0.1,
             num_classes=19,
             norm_cfg=dict(type='SyncBN', requires_grad=True),
-            align_corners=False,
+            align_corners=True,
             loss_decode=dict(
                 type='CrossEntropyLoss', use_sigmoid=False, loss_weight=0.4)),
         dict(
@@ -45,7 +49,7 @@ model = dict(
             dropout_ratio=0.1,
             num_classes=19,
             norm_cfg=dict(type='SyncBN', requires_grad=True),
-            align_corners=False,
+            align_corners=True,
             loss_decode=dict(
                 type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
             loss_prior_decode=dict(type='AffinityLoss', loss_weight=1.0))
