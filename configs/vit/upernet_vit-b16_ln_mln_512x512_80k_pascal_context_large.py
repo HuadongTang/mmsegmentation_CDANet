@@ -7,7 +7,7 @@ _base_ = [
 find_unused_parameters = True
 
 model = dict(
-    pretrained='/home/minzhou/Data/edcode/mmsegmentation_CDANet/pretrain/jx_vit_large_p16_384-b3be5167.pth',
+    pretrained='pretrain/jx_vit_large_p16_384-b3be5167.pth',
     backbone=dict(drop_path_rate=0.1, final_norm=True),
     decode_head=dict(num_classes=59),
     auxiliary_head=dict(num_classes=59))
