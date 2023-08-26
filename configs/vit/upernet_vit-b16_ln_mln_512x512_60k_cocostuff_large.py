@@ -1,5 +1,5 @@
 _base_ = [
-    '../_base_/models/upernet_vit-l16_ln_mln.py',
+    '../_base_/models/upernet_vit-b16_ln_mln.py',
     '../_base_/datasets/coco-stuff10k.py', '../_base_/default_runtime.py',
     '../_base_/schedules/schedule_60k.py'
 ]
