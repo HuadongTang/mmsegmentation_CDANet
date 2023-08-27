@@ -8,3 +8,4 @@ model = dict(
         init_cfg=dict(type='Pretrained', checkpoint=checkpoint_file),
         pretrain_img_size=384,
         window_size=12))
+data = dict(samples_per_gpu=4)
