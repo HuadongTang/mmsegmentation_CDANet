@@ -3,7 +3,7 @@ _base_ = [
     '../_base_/default_runtime.py', '../_base_/schedules/schedule_80k.py'
 ]
 checkpoint_file = 'https://download.openmmlab.com/mmsegmentation/v0.5/pretrain/swin/swin_large_patch4_window12_384_22k_20220412-6580f57d.pth'  # noqa
-
+find_unused_parameters=True
 model = dict(
     backbone=dict(
         init_cfg=dict(type='Pretrained', checkpoint=checkpoint_file),
