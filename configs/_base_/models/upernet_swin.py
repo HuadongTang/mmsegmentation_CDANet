@@ -35,7 +35,8 @@ model = dict(
         norm_cfg=norm_cfg,
         align_corners=False,
         loss_decode=dict(
-            type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0)),
+            type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
+        loss_prior_decode=dict(type='AffinityLoss', loss_weight=1.0)),
     auxiliary_head=dict(
         type='FCNHead',
         in_channels=384,
